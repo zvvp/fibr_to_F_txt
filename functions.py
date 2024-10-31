@@ -23,6 +23,52 @@ def get_coef_cor(x: np.ndarray, y: np.ndarray) -> float:
     else:
         return 0
 
+# def get_S():
+#     try:
+#         os.remove("C:/EcgVar/B1.txt")
+#     except FileNotFoundError:
+#         pass
+#     try:
+#         os.remove("C:/EcgVar/F.txt")
+#     except FileNotFoundError:
+#         pass
+#     with open("C:/EcgVar/B.txt", "r") as f:
+#         lines = f.readlines()
+#     ref_t = np.array([200, 100, 300, 200])  # 200, 160, 240, 200
+#     ref_t1 = np.array([200, 100, 300, 100])
+#     ref_t2 = np.array([300, 100, 300, 200])
+#     for i, line in enumerate(lines):
+#         if (i > 14) and (i < len(lines) - 2):  # i > 13   i < len(lines) - 1
+#             stop = int(lines[i].split(';')[0])
+#             form_1 = int(lines[i - 1].split(':')[1])
+#             form = int(lines[i].split(':')[1])
+#             if (';N' in line) and (not ';V' in lines[i - 1]) and (not ';S' in lines[i - 1]):
+#                 periods = get_periods(lines[i - 2:i + 3])
+#                 tf = np.array(periods)
+#                 t = np.array(periods[1:])
+#                 max_t = np.max(t)
+#                 min_t = np.min(t)
+#                 mean_t = (np.sum(tf) - np.max(tf) - np.min(tf)) / 3
+#                 if (min_t > 50) and (max_t < mean_t * 2):
+#                     coef_cor = get_coef_cor(ref_t, t)
+#                     coef_cor1 = get_coef_cor(ref_t1, t)
+#                     coef_cor2 = get_coef_cor(ref_t2, t)
+#                     if (((coef_cor > 0.975) and (t[1] < t[0] * 0.97) and (
+#                             t[0] * 1.05 > (t[1] + t[2]) / 2 > t[0] * 0.89))
+#                             or ((';S' in lines[i - 2]) and (coef_cor2 > 0.9)) or (coef_cor1 > 0.985)):
+#                         if (form == 0):
+#                             lines[i] = lines[i].replace(';N', ';A')
+#                             lines[i + 1] = lines[i + 1].replace(';N', ';A')
+#                         elif (form_1 == 0):
+#                             lines[i] = lines[i].replace(';N', ';A')
+#                             lines[i - 1] = lines[i - 1].replace(';N', ';A')
+#                         else:
+#                             lines[i] = lines[i].replace(';N', ';S')
+#
+#     with open("C:/EcgVar/B1.txt", "w") as f:
+#         for i, line in enumerate(lines):
+#             f.write(line)
+            
 def get_S():
     try:
         os.remove("C:/EcgVar/B1.txt")
@@ -32,30 +78,34 @@ def get_S():
         os.remove("C:/EcgVar/F.txt")
     except FileNotFoundError:
         pass
+    s = 0
     with open("C:/EcgVar/B.txt", "r") as f:
         lines = f.readlines()
-    ref_t = np.array([200, 100, 300, 200])  # 200, 160, 240, 200
-    ref_t1 = np.array([200, 100, 300, 100])
-    ref_t2 = np.array([300, 100, 300, 200])
+    ref_t = np.array([200, 200, 110, 290, 200])  # 200, 160, 240, 200
+    ref_t0 = np.array([200, 200, 110, 230, 230])
+    ref_t1 = np.array([110, 290, 110, 290, 200])
+    ref_t2 = np.array([290, 200, 110, 290, 200])
+    ref_t3 = np.array([290, 110, 290, 110, 290])
+    ref_t4 = np.array([110, 290, 110, 290, 110])
     for i, line in enumerate(lines):
-        if (i > 14) and (i < len(lines) - 2):  # i > 13   i < len(lines) - 1
-            stop = int(lines[i].split(';')[0])
+        if (i >= 14) and (i < len(lines) - 2):  # i > 13   i < len(lines) - 1
             form_1 = int(lines[i - 1].split(':')[1])
             form = int(lines[i].split(':')[1])
             if (';N' in line) and (not ';V' in lines[i - 1]) and (not ';S' in lines[i - 1]):
                 periods = get_periods(lines[i - 2:i + 3])
                 tf = np.array(periods)
-                t = np.array(periods[1:])
-                max_t = np.max(t)
-                min_t = np.min(t)
+                max_t = np.max(tf)
+                min_t = np.min(tf)
                 mean_t = (np.sum(tf) - np.max(tf) - np.min(tf)) / 3
-                if (min_t > 50) and (max_t < mean_t * 2):
-                    coef_cor = get_coef_cor(ref_t, t)
-                    coef_cor1 = get_coef_cor(ref_t1, t)
-                    coef_cor2 = get_coef_cor(ref_t2, t)
-                    if (((coef_cor > 0.975) and (t[1] < t[0] * 0.97) and (
-                            t[0] * 1.05 > (t[1] + t[2]) / 2 > t[0] * 0.89))
-                            or ((';S' in lines[i - 2]) and (coef_cor2 > 0.9)) or (coef_cor1 > 0.985)):
+                if (min_t > 50) and (max_t < mean_t * 2) and ((max_t - min_t) > mean_t * 0.03):
+                    coef_cor = get_coef_cor(ref_t, tf)
+                    coef_cor0 = get_coef_cor(ref_t0, tf)
+                    coef_cor1 = get_coef_cor(ref_t1, tf)
+                    coef_cor2 = get_coef_cor(ref_t2, tf)
+                    coef_cor3 = get_coef_cor(ref_t3, tf)
+                    coef_cor4 = get_coef_cor(ref_t4, tf)
+                    trs = 0.979    # trs = 0.9787
+                    if (coef_cor > trs) or (coef_cor0 > trs) or (coef_cor1 > trs) or (coef_cor2 > trs) or (coef_cor4 > trs):
                         if (form == 0):
                             lines[i] = lines[i].replace(';N', ';A')
                             lines[i + 1] = lines[i + 1].replace(';N', ';A')
@@ -64,10 +114,24 @@ def get_S():
                             lines[i - 1] = lines[i - 1].replace(';N', ';A')
                         else:
                             lines[i] = lines[i].replace(';N', ';S')
-
+                            s += 1
+                    elif coef_cor3 > trs:
+                        if (form == 0):
+                            lines[i] = lines[i].replace(';N', ';A')
+                            lines[i + 1] = lines[i + 1].replace(';N', ';A')
+                        elif (form_1 == 0):
+                            lines[i] = lines[i].replace(';N', ';A')
+                            lines[i - 1] = lines[i - 1].replace(';N', ';A')
+                        else:
+                            lines[i-1] = lines[i-1].replace(';N', ';S')
+                            s += 1
+                            lines[i + 1] = lines[i + 1].replace(';N', ';S')
+                            s += 1
+    lines[6] = lines[6] + f"НЖ: {s}"
     with open("C:/EcgVar/B1.txt", "w") as f:
         for i, line in enumerate(lines):
             f.write(line)
+            
 def get_fname():
     dir = os.getcwd()
     for file in os.listdir(dir):
