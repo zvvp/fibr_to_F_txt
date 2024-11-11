@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.signal import medfilt
-from functions import get_S, get_fname, get_start_time, parse_B_txt, get_coef_fibr, get_ranges_fibr, get_time_qrs, get_diff_time
+from functions import get_S, get_fname, get_start_time, parse_B_txt, get_coef_fibr, get_ranges_fibr, get_time_qrs, get_diff_time, del_V_S
 
 
 get_S()
@@ -14,7 +14,7 @@ else:
     text += f"start_time {start_time[0]}:{start_time[1]}:{start_time[2]}\n\n"
 
     r_pos, intervals, chars, forms = parse_B_txt()
-
+    intervals = del_V_S(intervals, chars)
     n = 111
     fintervals = medfilt(intervals, n)
     coef_fibr = get_coef_fibr(intervals, chars)
