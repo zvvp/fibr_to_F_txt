@@ -3,7 +3,7 @@ from scipy.signal import medfilt
 from functions import get_S, get_fname, get_start_time, parse_B_txt, get_coef_fibr, get_ranges_fibr, get_time_qrs, get_diff_time, del_V_S
 
 
-get_S()
+# get_S()
 fname = get_fname()
 if fname == 'Unknown':
     text = "No file *.ecg.\n"
@@ -12,7 +12,7 @@ else:
     text = "\n"
     text += f"{fname}\n\n"
     text += f"start_time {start_time[0]}:{start_time[1]}:{start_time[2]}\n\n"
-
+    get_S()
     r_pos, intervals, chars, forms = parse_B_txt()
     intervals = del_V_S(intervals, chars)
     n = 111

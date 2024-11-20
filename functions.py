@@ -50,7 +50,7 @@ def get_S():
                 max_t = np.max(tf)
                 min_t = np.min(tf)
                 mean_t = (np.sum(tf) - np.max(tf) - np.min(tf)) / 3
-                if (min_t > 50) and (max_t < mean_t * 2):
+                if (tf[2] > 50) and (tf[3] > 50) and (tf[2] < mean_t * 2) and (tf[3] < mean_t * 2):
                     coef_cor = get_coef_cor(ref_t, tf[1:])
                     coef_cor0 = get_coef_cor(ref_t0, tf[1:])
                     coef_cor1 = get_coef_cor(ref_t1, tf[1:])
@@ -71,6 +71,9 @@ def get_S():
                         if (tf[3] - tf[2]) > tf[1] * 0.06:
                             lines[i + 1] = lines[i + 1].replace(';N', ';S')
                             s += 1
+                else:
+                    lines[i] = lines[i].replace(';N', ';A')
+                    lines[i + 1] = lines[i + 1].replace(';N', ';A')
     lines[6] = lines[6] + f"НЖ: {s}"
     with open("C:/EcgVar/B1.txt", "w") as f:
         for i, line in enumerate(lines):
@@ -132,7 +135,7 @@ def parse_B_txt():
 def del_V_S(intervals, chars):
     len_in = len(intervals)
     out = intervals.copy()
-    for i in np.arange(3,len_in - 3):
+    for i in np.arange(3, len_in - 3):
         if ('V' in chars[i]) or ('S' in chars[i]) or ('A' in chars[i]):
             # out[i:i+2] = (np.sum(intervals[i-2:i+3]) - np.sum(intervals[i:i+2])) / 3
             out[i:i + 2] = np.mean(intervals[i-3:i+4])
@@ -143,7 +146,7 @@ def get_coef_fibr(intervals, chars):
     out = np.zeros(len_in)
     for i in np.arange(2, len_in - 3):
         win_t = intervals[i - 2:i + 3].copy()
-        win_t[win_t > np.mean(win_t) * 2] = np.mean(win_t)
+        # win_t[win_t > np.mean(win_t) * 2] = np.mean(win_t)
         diff_t = np.abs(win_t - np.roll(win_t, 1))
         diff_t = np.sort(diff_t)
         sum_diff_tf = np.sum(diff_t[:3])
