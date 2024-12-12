@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from numba import njit
+from scipy.signal import medfilt
 
 
 def get_periods(lines):
@@ -127,8 +128,8 @@ def parse_B_txt():
         intervals = np.array(intervals)
         chars = np.array(chars)
         forms = np.array(forms)
-        # intervals[intervals < 50] = 50
-        # intervals[intervals > 500] = 500
+        intervals[intervals < 50] = 50
+        intervals[intervals > 500] = 500
 
     return r_pos, intervals, chars, forms
 
@@ -137,50 +138,53 @@ def del_V_S(intervals, chars):
     out = intervals.copy()
     for i in np.arange(3, len_in - 3):
         if ('V' in chars[i]) or ('S' in chars[i]) or ('A' in chars[i]):
-            # out[i:i+2] = (np.sum(intervals[i-2:i+3]) - np.sum(intervals[i:i+2])) / 3
-            out[i:i + 2] = np.mean(intervals[i-3:i+4])
+            out[i:i + 2] = np.mean(intervals[i:i+2])
     return out
 
-def get_coef_fibr(intervals, chars):
+def get_coef_fibr(intervals):
     len_in = len(intervals)
     out = np.zeros(len_in)
     for i in np.arange(2, len_in - 3):
-        win_t = intervals[i - 2:i + 3].copy()
-        # win_t[win_t > np.mean(win_t) * 2] = np.mean(win_t)
+        win_t = intervals[i - 2:i + 3]
         diff_t = np.abs(win_t - np.roll(win_t, 1))
-        diff_t = np.sort(diff_t)
-        sum_diff_tf = np.sum(diff_t[:3])
+        diff_t = np.sort(diff_t[1:]) # diff_t = np.sort(diff_t)
+        sum_diff_tf = np.sum(diff_t[:-1]) # sum_diff_tf = np.sum(diff_t[1:-1])
         win_t = np.sort(win_t)
         mean_win_t = np.mean(win_t[1:-1])
-        out[i] = (sum_diff_tf * (1 + 100000 / mean_win_t ** 2)) ** 2 * 0.0019 * 5
+        out[i] = sum_diff_tf + 5000 / mean_win_t  # / mean_win_t * 250
+    out = medfilt(out, 111) ** 2 / 80
+    # out = moving_average(out, 9)
     return out
 
 def get_ranges_fibr(fintervals, fcoef_fibr, r_pos):
     start = []
     stop = []
     temp = 0
-    w = 1500   # 7500
+    w = 7500   # 7500
     for i in range(1, len(fintervals)):
         if (fcoef_fibr[i-1] <= fintervals[i-1]) and (fcoef_fibr[i] > fintervals[i]):
             if len(start) == 0:
                 start.append(r_pos[i])
                 temp = r_pos[i]
                 continue
-            if (r_pos[i] - temp) >= w:
+            elif (r_pos[i] - temp) >= w:
                 start.append(r_pos[i])
                 temp = r_pos[i]
+                continue
             elif len(stop) > 0:
                 stop.pop(-1)
                 if len(stop) > 0:
                     temp = stop[-1]
-        elif (fcoef_fibr[i-1] >= fintervals[i-1]) and (fcoef_fibr[i] < fintervals[i]):
-            if len(stop) == 0:
+                continue
+        elif (fcoef_fibr[i-1] >= fintervals[i-1]) and (fcoef_fibr[i] < fintervals[i]) and len(start) > 0:
+            if (len(stop) == 0):
                 stop.append(r_pos[i])
                 temp = r_pos[i]
                 continue
-            if (r_pos[i] - temp) >= w:
+            elif (r_pos[i] - temp) >= w:
                 stop.append(r_pos[i])
                 temp = r_pos[i]
+                continue
             elif len(start) > 0:
                 start.pop(-1)
                 if len(start) > 0:
@@ -232,3 +236,15 @@ def get_diff_time(start, stop):
         diff_h = h2 + 24 - h1
 
     return diff_h, diff_m, diff_s
+
+def moving_average(data, window_size):
+    out = np.zeros(len(data))
+    for i in range(window_size // 2, len(data) - window_size // 2):
+        out[i] = np.mean(data[i - window_size // 2:i + window_size // 2])
+    return out
+
+def get_number_of_peaks(fragment):
+    for i in range(3, fragment.size - 3):
+        if ((fragment[i] - fragment[i - 3]) > 0.003) and ((fragment[i] - fragment[i + 3]) > 0.003):
+            return 1
+    return 0
