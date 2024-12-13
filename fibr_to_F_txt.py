@@ -101,16 +101,22 @@ else:
     get_S()
     r_pos, intervals, chars, forms = parse_B_txt()
     pzub = get_P(lead1, lead2, lead3, intervals, r_pos, chars)
+    mean_pzub = np.mean(pzub)
+    pzub = (pzub - mean_pzub) * 0.8 + mean_pzub
     fintervals = del_V_S(intervals, chars)
     coef_fibr = get_coef_fibr(fintervals)
-    fintervals = moving_average(fintervals, 15)
-    p_coef_fibr = coef_fibr + pzub
-    p_coef_fibr = moving_average(p_coef_fibr, 179) * 2.0
-    n = 111
+    n = 51
     fintervals = medfilt(fintervals, n)
-    # coef_fibr = get_coef_fibr(intervals, chars)
-    # coef_fibr[coef_fibr > 3000] = 3000
-    # fcoef_fibr = medfilt(coef_fibr, n)
+    fintervals = moving_average(fintervals, n)
+
+    coef_fibr = medfilt(coef_fibr, n)
+    coef_fibr = moving_average(coef_fibr, n)
+    mean_fibr = np.mean(coef_fibr)
+    coef_fibr = (coef_fibr - mean_fibr) * 0.8 + mean_fibr
+    p_coef_fibr = coef_fibr * pzub / 200
+    mean_p_fibr = np.mean(p_coef_fibr)
+    p_coef_fibr = (p_coef_fibr - mean_p_fibr) * 0.9 + mean_p_fibr
+
 
     ranges_fibr = get_ranges_fibr(fintervals, p_coef_fibr, r_pos)
 

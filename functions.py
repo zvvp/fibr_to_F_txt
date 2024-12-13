@@ -128,8 +128,8 @@ def parse_B_txt():
         intervals = np.array(intervals)
         chars = np.array(chars)
         forms = np.array(forms)
-        intervals[intervals < 50] = 50
-        intervals[intervals > 500] = 500
+        intervals[intervals < 50] = np.mean(intervals)
+        intervals[intervals > 500] = np.mean(intervals)
 
     return r_pos, intervals, chars, forms
 
@@ -138,59 +138,112 @@ def del_V_S(intervals, chars):
     out = intervals.copy()
     for i in np.arange(3, len_in - 3):
         if ('V' in chars[i]) or ('S' in chars[i]) or ('A' in chars[i]):
-            out[i:i + 2] = np.mean(intervals[i:i+2])
+            mean_interval = np.mean([intervals[i - 1], intervals[i + 2]])
+            out[i:i + 2] = mean_interval + (intervals[i:i + 2] - mean_interval) * 0.04
     return out
 
 def get_coef_fibr(intervals):
     len_in = len(intervals)
+    mean_interval = np.mean([intervals])
     out = np.zeros(len_in)
-    for i in np.arange(2, len_in - 3):
-        win_t = intervals[i - 2:i + 3]
+    for i in np.arange(7, len_in - 8):
+        win_t = intervals[i - 7:i + 8]
+        # win_t = np.sort(win_t)[2:-3]
+        # mean_win_t = np.mean(win_t)
+        mean_win_t = np.median(win_t)
         diff_t = np.abs(win_t - np.roll(win_t, 1))
-        diff_t = np.sort(diff_t[1:]) # diff_t = np.sort(diff_t)
-        sum_diff_tf = np.sum(diff_t[:-1]) # sum_diff_tf = np.sum(diff_t[1:-1])
-        win_t = np.sort(win_t)
-        mean_win_t = np.mean(win_t[1:-1])
-        out[i] = sum_diff_tf + 5000 / mean_win_t  # / mean_win_t * 250
-    out = medfilt(out, 111) ** 2 / 80
-    # out = moving_average(out, 9)
+        # diff_t = diff_t[1:]
+        # diff_t = np.sort(diff_t)
+        # sum_diff_tf = np.sum(diff_t[:-1])
+        sum_diff_tf = np.median(diff_t)
+        # sum_diff_tf = np.sum(diff_t)
+        # win_t = np.sort(win_t)
+        # out[i] = sum_diff_tf + 5000/mean_win_t
+        out[i] = sum_diff_tf / mean_win_t / mean_interval * 500000
+    # mean_out = np.mean(out)
     return out
+# def get_coef_fibr(intervals):
+#     len_in = len(intervals)
+#     out = np.zeros(len_in)
+#     for i in np.arange(2, len_in - 3):
+#         win_t = intervals[i - 2:i + 3]
+#         diff_t = np.abs(win_t - np.roll(win_t, 1))
+#         diff_t = np.sort(diff_t[1:]) # diff_t = np.sort(diff_t)
+#         sum_diff_tf = np.sum(diff_t[:-1]) # sum_diff_tf = np.sum(diff_t[1:-1])
+#         win_t = np.sort(win_t)
+#         mean_win_t = np.mean(win_t[1:-1])
+#         out[i] = sum_diff_tf + 5000 / mean_win_t  # / mean_win_t * 250
+#     out = medfilt(out, 111) ** 2 / 80
+#     # out = moving_average(out, 9)
+#     return out
 
 def get_ranges_fibr(fintervals, fcoef_fibr, r_pos):
     start = []
     stop = []
     temp = 0
-    w = 7500   # 7500
-    for i in range(1, len(fintervals)):
+    w = 7500   # 2150
+    for i in range(25, len(fintervals)-25):
         if (fcoef_fibr[i-1] <= fintervals[i-1]) and (fcoef_fibr[i] > fintervals[i]):
             if len(start) == 0:
                 start.append(r_pos[i])
                 temp = r_pos[i]
                 continue
-            elif (r_pos[i] - temp) >= w:
+            if (r_pos[i] - temp) >= w:
                 start.append(r_pos[i])
                 temp = r_pos[i]
-                continue
             elif len(stop) > 0:
                 stop.pop(-1)
                 if len(stop) > 0:
                     temp = stop[-1]
-                continue
-        elif (fcoef_fibr[i-1] >= fintervals[i-1]) and (fcoef_fibr[i] < fintervals[i]) and len(start) > 0:
-            if (len(stop) == 0):
+        elif (fcoef_fibr[i-1] >= fintervals[i-1]) and (fcoef_fibr[i] < fintervals[i]):
+            if len(stop) == 0:
                 stop.append(r_pos[i])
                 temp = r_pos[i]
                 continue
-            elif (r_pos[i] - temp) >= w:
+            if (r_pos[i] - temp) >= w:
                 stop.append(r_pos[i])
                 temp = r_pos[i]
-                continue
             elif len(start) > 0:
                 start.pop(-1)
                 if len(start) > 0:
                     temp = start[-1]
 
     return start, stop
+# def get_ranges_fibr(fintervals, fcoef_fibr, r_pos):
+#     start = []
+#     stop = []
+#     temp = 0
+#     w = 7500   # 7500
+#     for i in range(1, len(fintervals)):
+#         if (fcoef_fibr[i-1] <= fintervals[i-1]) and (fcoef_fibr[i] > fintervals[i]):
+#             if len(start) == 0:
+#                 start.append(r_pos[i])
+#                 temp = r_pos[i]
+#                 continue
+#             elif (r_pos[i] - temp) >= w:
+#                 start.append(r_pos[i])
+#                 temp = r_pos[i]
+#                 continue
+#             elif len(stop) > 0:
+#                 stop.pop(-1)
+#                 if len(stop) > 0:
+#                     temp = stop[-1]
+#                 continue
+#         elif (fcoef_fibr[i-1] >= fintervals[i-1]) and (fcoef_fibr[i] < fintervals[i]) and len(start) > 0:
+#             if (len(stop) == 0):
+#                 stop.append(r_pos[i])
+#                 temp = r_pos[i]
+#                 continue
+#             elif (r_pos[i] - temp) >= w:
+#                 stop.append(r_pos[i])
+#                 temp = r_pos[i]
+#                 continue
+#             elif len(start) > 0:
+#                 start.pop(-1)
+#                 if len(start) > 0:
+#                     temp = start[-1]
+#
+#     return start, stop
 
 def get_time_qrs(addr, start_time):
     s = addr * 4 // 1000
@@ -238,7 +291,8 @@ def get_diff_time(start, stop):
     return diff_h, diff_m, diff_s
 
 def moving_average(data, window_size):
-    out = np.zeros(len(data))
+    mean_data = np.mean(data)
+    out = np.ones(len(data)) * mean_data
     for i in range(window_size // 2, len(data) - window_size // 2):
         out[i] = np.mean(data[i - window_size // 2:i + window_size // 2])
     return out
