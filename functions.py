@@ -106,7 +106,8 @@ def get_start_time(fname):
             start_m = int(f.read(2))
             f.seek(156)
             start_s = int(f.read(2))
-    return start_h, start_m, start_s
+    start_addr = ((start_h * 60 + start_m) * 60 + start_s) * 250
+    return start_h, start_m, start_s, start_addr
 
 def parse_B_txt():
     r_pos = []
@@ -181,8 +182,16 @@ def get_ranges_fibr(fintervals, fcoef_fibr, r_pos):
     start = []
     stop = []
     temp = 0
-    w = 7500   # 2150
-    for i in range(25, len(fintervals)-25):
+    w = 500   # 2150
+    for i in range(1, len(fintervals)):
+        if (i == 1) and (fcoef_fibr[i] > fintervals[i]):
+            start.append(r_pos[i])
+            temp = r_pos[i]
+            continue
+        if (i == len(fintervals) - 1) and (fcoef_fibr[i] > fintervals[i]):
+            stop.append(r_pos[i])
+            temp = r_pos[i]
+            continue
         if (fcoef_fibr[i-1] <= fintervals[i-1]) and (fcoef_fibr[i] > fintervals[i]):
             if len(start) == 0:
                 start.append(r_pos[i])
