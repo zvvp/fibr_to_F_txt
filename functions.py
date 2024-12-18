@@ -85,7 +85,11 @@ def get_fname():
     for file in os.listdir(dir):
         if file.endswith(".ecg"):
             fname = os.path.join(dir, file)
-            return fname
+            size = (os.path.getsize(fname) - 1023) // 6
+            time = get_time_from_samples(size)
+            h = time[0] * 24 + time[1]
+            total_time = f"Длина записи {h}:{time[2]}:{time[3]}\n"
+            return fname, total_time
     return "Unknown"
 
 def get_start_time(fname):
@@ -179,41 +183,42 @@ def get_coef_fibr(intervals):
 #     return out
 
 def get_ranges_fibr(fintervals, fcoef_fibr, r_pos):
-    start = []
-    stop = []
+    start = np.array([], dtype=int)
+    stop = np.array([], dtype=int)
     temp = 0
-    w = 500   # 2150
-    for i in range(1, len(fintervals)):
+    w = 8500   # 8500
+    for i in np.arange(1, len(fintervals)):
         if (i == 1) and (fcoef_fibr[i] > fintervals[i]):
-            start.append(r_pos[i])
+            start = np.append(start, r_pos[i])
             temp = r_pos[i]
             continue
         if (i == len(fintervals) - 1) and (fcoef_fibr[i] > fintervals[i]):
-            stop.append(r_pos[i])
-            temp = r_pos[i]
-            continue
-        if (fcoef_fibr[i-1] <= fintervals[i-1]) and (fcoef_fibr[i] > fintervals[i]):
-            if len(start) == 0:
-                start.append(r_pos[i])
+            if (r_pos[i] - temp) > w:
+                stop = np.append(stop, r_pos[i])
                 temp = r_pos[i]
                 continue
-            if (r_pos[i] - temp) >= w:
-                start.append(r_pos[i])
+            else:
+                start = np.delete(start, -1)
+                continue
+        if (fcoef_fibr[i-1] <= fintervals[i-1]) and (fcoef_fibr[i] > fintervals[i]):
+            if (len(start) == 0) and (len(stop) == 0):
+                start = np.append(start, r_pos[i])
+                temp = r_pos[i]
+                continue
+            if (r_pos[i] - temp) > w:
+                start = np.append(start, r_pos[i])
                 temp = r_pos[i]
             elif len(stop) > 0:
-                stop.pop(-1)
+                stop = np.delete(stop, -1)
                 if len(stop) > 0:
                     temp = stop[-1]
+                    continue
         elif (fcoef_fibr[i-1] >= fintervals[i-1]) and (fcoef_fibr[i] < fintervals[i]):
-            if len(stop) == 0:
-                stop.append(r_pos[i])
-                temp = r_pos[i]
-                continue
-            if (r_pos[i] - temp) >= w:
-                stop.append(r_pos[i])
+            if (r_pos[i] - temp) > w:
+                stop = np.append(stop, r_pos[i])
                 temp = r_pos[i]
             elif len(start) > 0:
-                start.pop(-1)
+                start = np.delete(start, -1)
                 if len(start) > 0:
                     temp = start[-1]
 
@@ -254,50 +259,40 @@ def get_ranges_fibr(fintervals, fcoef_fibr, r_pos):
 #
 #     return start, stop
 
-def get_time_qrs(addr, start_time):
-    s = addr * 4 // 1000
+def get_addr_qrs(addr, start_addr):
+    return addr + start_addr
+def get_time_from_samples(sample_count):
+    s = int(sample_count * 0.004)
     m = s // 60
     s = s % 60
-    s = s + start_time[2]
-    if s >= 60:
-        s = s - 60
-        m = m + 1
+
     h = m // 60
     m = m % 60
-    m = m + start_time[1]
-    if m >= 60:
-        m = m - 60
-        h = h + 1
+
     d = h // 24
     h = h % 24
-    h = h + start_time[0]
-    if h >= 24:
-        h = h - 24
-        d = d + 1
-    # d = d + 1
-    h = 24 * d + h
     # return f"{d:02d} день {h:02d}:{m:02d}:{s:02d}"
-    return h, m, s
+    return d, h, m, s
 
-def get_diff_time(start, stop):
-    h1, m1, s1 = start
-    h2, m2, s2 = stop
-    if s1 <= s2:
-        diff_s = s2 - s1
-    else:
-        diff_s = s2 + 60 - s1
-        m2 -= 1
-    if m1 <= m2:
-        diff_m = m2 - m1
-    else:
-        diff_m = m2 + 60 - m1
-        h2 -= 1
-    if h1 <= h2:
-        diff_h = h2 - h1
-    else:
-        diff_h = h2 + 24 - h1
-
-    return diff_h, diff_m, diff_s
+# def get_diff_time(start, stop):
+#     h1, m1, s1 = start
+#     h2, m2, s2 = stop
+#     if s1 <= s2:
+#         diff_s = s2 - s1
+#     else:
+#         diff_s = s2 + 60 - s1
+#         m2 -= 1
+#     if m1 <= m2:
+#         diff_m = m2 - m1
+#     else:
+#         diff_m = m2 + 60 - m1
+#         h2 -= 1
+#     if h1 <= h2:
+#         diff_h = h2 - h1
+#     else:
+#         diff_h = h2 + 24 - h1
+#
+#     return diff_h, diff_m, diff_s
 
 def moving_average(data, window_size):
     mean_data = np.mean(data)
