@@ -93,12 +93,12 @@ else:
     # text += total_time
     text += f"Начало записи {start_time[0]}:{start_time[1]}:{start_time[2]}\n\n"
 
-    lead1 = np.load("d:/Kp_01/clean_lead1.npy")
-    lead2 = np.load("d:/Kp_01/clean_lead2.npy")
-    lead3 = np.load("d:/Kp_01/clean_lead3.npy")
-    # lead1 = np.load("clean_lead1.npy")
-    # lead2 = np.load("clean_lead2.npy")
-    # lead3 = np.load("clean_lead3.npy")
+    # lead1 = np.load("d:/Kp_01/clean_lead1.npy")
+    # lead2 = np.load("d:/Kp_01/clean_lead2.npy")
+    # lead3 = np.load("d:/Kp_01/clean_lead3.npy")
+    lead1 = np.load("clean_lead1.npy")
+    lead2 = np.load("clean_lead2.npy")
+    lead3 = np.load("clean_lead3.npy")
     get_S()
     r_pos, intervals, chars, forms = parse_B_txt()
     pzub = get_P(lead1, lead2, lead3, intervals, r_pos, chars)
@@ -113,6 +113,8 @@ else:
     coef_fibr = medfilt(coef_fibr, n)
     coef_fibr = moving_average(coef_fibr, n)
     mean_fibr = np.mean(coef_fibr)
+    # print(mean_fibr)
+    # print(100 + mean_fibr * 20)
     coef_fibr = (coef_fibr - mean_fibr) * 0.8 + mean_fibr
     p_coef_fibr = coef_fibr * pzub / 200
     mean_p_fibr = np.mean(p_coef_fibr)

@@ -12,6 +12,7 @@ def get_periods(lines):
     period2 = int(lines[4].split(';')[1])
     return period_2, period_1, period, period1, period2
 
+
 @njit
 def get_coef_cor(x: np.ndarray, y: np.ndarray) -> float:
     mean_x: float = np.mean(x)
@@ -23,7 +24,8 @@ def get_coef_cor(x: np.ndarray, y: np.ndarray) -> float:
         return (mean_xy - mean_x * mean_y) / (std_x * std_y)
     else:
         return 0
-            
+
+
 def get_S():
     try:
         os.remove("C:/EcgVar/B1.txt")
@@ -79,7 +81,8 @@ def get_S():
     with open("C:/EcgVar/B1.txt", "w") as f:
         for i, line in enumerate(lines):
             f.write(line)
-            
+
+
 def get_fname():
     dir = os.getcwd()
     for file in os.listdir(dir):
@@ -91,6 +94,7 @@ def get_fname():
             total_time = f"Длина записи {h}:{time[2]}:{time[3]}\n"
             return fname, total_time
     return "Unknown"
+
 
 def get_start_time(fname):
     with open(fname, "rb") as f:
@@ -112,6 +116,7 @@ def get_start_time(fname):
             start_s = int(f.read(2))
     start_addr = ((start_h * 60 + start_m) * 60 + start_s) * 250
     return start_h, start_m, start_s, start_addr
+
 
 def parse_B_txt():
     r_pos = []
@@ -138,6 +143,7 @@ def parse_B_txt():
 
     return r_pos, intervals, chars, forms
 
+
 def del_V_S(intervals, chars):
     len_in = len(intervals)
     out = intervals.copy()
@@ -146,6 +152,7 @@ def del_V_S(intervals, chars):
             mean_interval = np.mean([intervals[i - 1], intervals[i + 2]])
             out[i:i + 2] = mean_interval + (intervals[i:i + 2] - mean_interval) * 0.04
     return out
+
 
 def get_coef_fibr(intervals):
     len_in = len(intervals)
@@ -167,6 +174,8 @@ def get_coef_fibr(intervals):
         out[i] = sum_diff_tf / mean_win_t / mean_interval * 500000
     # mean_out = np.mean(out)
     return out
+
+
 # def get_coef_fibr(intervals):
 #     len_in = len(intervals)
 #     out = np.zeros(len_in)
@@ -186,7 +195,12 @@ def get_ranges_fibr(fintervals, fcoef_fibr, r_pos):
     start = np.array([], dtype=int)
     stop = np.array([], dtype=int)
     temp = 0
-    w = 8500   # 8500
+    # w = 8500   # 8500
+    w = 400 + np.mean(fcoef_fibr) ** 2 / 5
+    if w > 20000:
+        w = 20000
+    # print(np.mean(fcoef_fibr))
+    # print(w)
     for i in np.arange(1, len(fintervals)):
         if (i == 1) and (fcoef_fibr[i] > fintervals[i]):
             start = np.append(start, r_pos[i])
@@ -200,7 +214,7 @@ def get_ranges_fibr(fintervals, fcoef_fibr, r_pos):
             else:
                 start = np.delete(start, -1)
                 continue
-        if (fcoef_fibr[i-1] <= fintervals[i-1]) and (fcoef_fibr[i] > fintervals[i]):
+        if (fcoef_fibr[i - 1] <= fintervals[i - 1]) and (fcoef_fibr[i] > fintervals[i]):
             if (len(start) == 0) and (len(stop) == 0):
                 start = np.append(start, r_pos[i])
                 temp = r_pos[i]
@@ -210,19 +224,21 @@ def get_ranges_fibr(fintervals, fcoef_fibr, r_pos):
                 temp = r_pos[i]
             elif len(stop) > 0:
                 stop = np.delete(stop, -1)
-                if len(stop) > 0:
-                    temp = stop[-1]
+                if len(start) > 0:
+                    temp = start[-1]
                     continue
-        elif (fcoef_fibr[i-1] >= fintervals[i-1]) and (fcoef_fibr[i] < fintervals[i]):
+        elif (fcoef_fibr[i - 1] >= fintervals[i - 1]) and (fcoef_fibr[i] < fintervals[i]):
             if (r_pos[i] - temp) > w:
                 stop = np.append(stop, r_pos[i])
                 temp = r_pos[i]
             elif len(start) > 0:
                 start = np.delete(start, -1)
-                if len(start) > 0:
-                    temp = start[-1]
+                if len(stop) > 0:
+                    temp = stop[-1]
 
     return start, stop
+
+
 # def get_ranges_fibr(fintervals, fcoef_fibr, r_pos):
 #     start = []
 #     stop = []
@@ -261,6 +277,8 @@ def get_ranges_fibr(fintervals, fcoef_fibr, r_pos):
 
 def get_addr_qrs(addr, start_addr):
     return addr + start_addr
+
+
 def get_time_from_samples(sample_count):
     s = int(sample_count * 0.004)
     m = s // 60
@@ -273,6 +291,7 @@ def get_time_from_samples(sample_count):
     h = h % 24
     # return f"{d:02d} день {h:02d}:{m:02d}:{s:02d}"
     return d, h, m, s
+
 
 # def get_diff_time(start, stop):
 #     h1, m1, s1 = start
@@ -300,6 +319,7 @@ def moving_average(data, window_size):
     for i in range(window_size // 2, len(data) - window_size // 2):
         out[i] = np.mean(data[i - window_size // 2:i + window_size // 2])
     return out
+
 
 def get_number_of_peaks(fragment):
     for i in range(3, fragment.size - 3):
